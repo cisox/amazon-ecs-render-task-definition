@@ -19,7 +19,7 @@ To insert the image URI `amazon/amazon-ecs-sample:latest` as the image for the `
 ```yaml
     - name: Render Amazon ECS task definition
       id: render-web-container
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      uses: cisox/amazon-ecs-render-task-definition@v1
       with:
         task-definition: task-definition.json
         container-name: web
@@ -32,7 +32,7 @@ To insert the image URI `amazon/amazon-ecs-sample:latest` as the image for the `
         environment-variables: "LOG_LEVEL=info"
 
     - name: Deploy to Amazon ECS service
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      uses: cisox/amazon-ecs-deploy-task-definition@v1
       with:
         task-definition: ${{ steps.render-web-container.outputs.task-definition }}
         service: my-service
@@ -47,7 +47,7 @@ input of the second:
 ```yaml
     - name: Render Amazon ECS task definition for first container
       id: render-web-container
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      uses: cisox/amazon-ecs-render-task-definition@v1
       with:
         task-definition: task-definition.json
         container-name: web
@@ -58,14 +58,14 @@ input of the second:
 
     - name: Modify Amazon ECS task definition with second container
       id: render-app-container
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      uses: cisox/amazon-ecs-render-task-definition@v1
       with:
         task-definition: ${{ steps.render-web-container.outputs.task-definition }}
         container-name: app
         image: amazon/amazon-ecs-sample-2:latest
 
     - name: Deploy to Amazon ECS service
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      uses: cisox/amazon-ecs-deploy-task-definition@v1
       with:
         task-definition: ${{ steps.render-app-container.outputs.task-definition }}
         service: my-service
