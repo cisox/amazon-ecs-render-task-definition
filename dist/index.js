@@ -1394,6 +1394,11 @@ async function run() {
     const taskDefinitionFile = core.getInput('task-definition', { required: true });
     const containerName = core.getInput('container-name', { required: true });
     const imageURI = core.getInput('image', { required: true });
+    const taskRoleArn = core.getInput('task-role-arn', { required: true });
+    const executionRoleArn = core.getInput('execution-role-arn', { required: true });
+    const volumeName = core.getInput('volume-name', { required: false });
+    const fileSystemId = core.getInput('file-system-id', { required: false });
+    const accessPointId = core.getInput('access-point-id', { required: false });
 
     const environmentVariables = core.getInput('environment-variables', { required: false });
 
@@ -1410,13 +1415,46 @@ async function run() {
     if (!Array.isArray(taskDefContents.containerDefinitions)) {
       throw new Error('Invalid task definition format: containerDefinitions section is not present or is not an array');
     }
-    const containerDef = taskDefContents.containerDefinitions.find(function(element) {
-      return element.name == containerName;
-    });
+
+    const containerDef = taskDefContents.containerDefinitions.find((x) => x.name === containerName);
+
     if (!containerDef) {
       throw new Error('Invalid task definition: Could not find container definition with matching name');
     }
+
     containerDef.image = imageURI;
+
+    // Insert the task role ARN
+    taskDefContents.taskRoleArn = taskRoleArn;
+
+    // Insert the execution role ARN
+    taskDefContents.executionRoleArn = executionRoleArn;
+
+    if (volumeName) {
+      if (!Array.isArray(taskDefContents.volumes)) {
+        throw new Error('Invalid task definition format: volumes section is not present or is not an array');
+      }
+
+      const volumeDef = taskDefContents.volumes.find((x) => x.name === volumeName);
+
+      if (!volumeDef) {
+        throw new Error('Invalid task definition: Could not find volume definition with matching name');
+      }
+
+      if (!('efsVolumeConfiguration' in volumeDef)) {
+        throw new Error('Invalid task definition: Could not find efsVolumeConfiguration definition');
+      }
+
+      volumeDef.efsVolumeConfiguration.fileSystemId = fileSystemId;
+
+      if (accessPointId) {
+        if (!('authorizationConfig' in volumeDef.efsVolumeConfiguration)) {
+          throw new Error('Invalid task definition: Could not find authorizationConfig definition');
+        }
+
+        volumeDef.efsVolumeConfiguration.authorizationConfig.accessPointId = accessPointId;
+      }
+    }
 
     if (environmentVariables) {
 
