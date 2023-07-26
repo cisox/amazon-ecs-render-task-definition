@@ -9,12 +9,11 @@ async function run() {
     const taskDefinitionFile = core.getInput('task-definition', { required: true });
     const containerName = core.getInput('container-name', { required: true });
     const imageURI = core.getInput('image', { required: true });
-    const taskRoleArn = core.getInput('task-role-arn', { required: true });
-    const executionRoleArn = core.getInput('execution-role-arn', { required: true });
+    const taskRoleArn = core.getInput('task-role-arn', { required: false });
+    const executionRoleArn = core.getInput('execution-role-arn', { required: false });
     const volumeName = core.getInput('volume-name', { required: false });
     const fileSystemId = core.getInput('file-system-id', { required: false });
     const accessPointId = core.getInput('access-point-id', { required: false });
-
     const environmentVariables = core.getInput('environment-variables', { required: false });
 
     // Parse the task definition
@@ -40,10 +39,14 @@ async function run() {
     containerDef.image = imageURI;
 
     // Insert the task role ARN
-    taskDefContents.taskRoleArn = taskRoleArn;
+    if (taskRoleArn) {
+      taskDefContents.taskRoleArn = taskRoleArn;
+    }
 
     // Insert the execution role ARN
-    taskDefContents.executionRoleArn = executionRoleArn;
+    if (executionRoleArn) {
+      taskDefContents.executionRoleArn = executionRoleArn;
+    }
 
     if (volumeName) {
       if (!Array.isArray(taskDefContents.volumes)) {
@@ -72,42 +75,42 @@ async function run() {
     }
 
     if (environmentVariables) {
+      const variables = environmentVariables
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .reduce((acc, line) => {
+          const separatorIdx = line.indexOf("=");
+          if (separatorIdx === -1) {
+            throw new Error(`Cannot parse the environment variable '${line}'. Environment variable pairs must be of the form NAME=value.`);
+          }
+          acc[line.substring(0, separatorIdx)] = line.substring(separatorIdx + 1);
+          return acc;
+        }, {});
 
-      // If environment array is missing, create it
-      if (!Array.isArray(containerDef.environment)) {
-        containerDef.environment = [];
+      if (Object.keys(variables).length > 0) {
+        // If environment array is missing, create it
+        if (!Array.isArray(containerDef.environment)) {
+          containerDef.environment = [];
+        }
+
+        for (const [name, value] of Object.entries(variables)) {
+          // Search container definition environment for one matching name
+          const variableDef = containerDef.environment.find((e) => e.name == name);
+
+          if (variableDef) {
+            // If found, update
+            variableDef.value = value;
+          } else {
+            // Else, create
+            containerDef.environment.push({
+              name,
+              value
+            });
+          }
+        }
       }
-
-      // Get pairs by splitting on newlines
-      environmentVariables.split('\n').forEach(function (line) {
-        // Trim whitespace
-        const trimmedLine = line.trim();
-        // Skip if empty
-        if (trimmedLine.length === 0) { return; }
-        // Split on =
-        const separatorIdx = trimmedLine.indexOf("=");
-        // If there's nowhere to split
-        if (separatorIdx === -1) {
-            throw new Error(`Cannot parse the environment variable '${trimmedLine}'. Environment variable pairs must be of the form NAME=value.`);
-        }
-        // Build object
-        const variable = {
-          name: trimmedLine.substring(0, separatorIdx),
-          value: trimmedLine.substring(separatorIdx + 1),
-        };
-
-        // Search container definition environment for one matching name
-        const variableDef = containerDef.environment.find((e) => e.name == variable.name);
-        if (variableDef) {
-          // If found, update
-          variableDef.value = variable.value;
-        } else {
-          // Else, create
-          containerDef.environment.push(variable);
-        }
-      })
     }
-
 
     // Write out a new task definition file
     var updatedTaskDefFile = tmp.fileSync({

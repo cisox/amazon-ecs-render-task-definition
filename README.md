@@ -24,6 +24,11 @@ To insert the image URI `amazon/amazon-ecs-sample:latest` as the image for the `
         task-definition: task-definition.json
         container-name: web
         image: amazon/amazon-ecs-sample:latest
+        task-role-arn: arn:
+        execution-role-arn: arn:
+        volume-name: myvolume
+        file-system-id: fs-1234567890
+        access-point-id: fsap-1234567890
         environment-variables: "LOG_LEVEL=info"
 
     - name: Deploy to Amazon ECS service
