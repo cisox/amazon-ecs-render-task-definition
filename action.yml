@@ -13,6 +13,21 @@ inputs:
   image:
     description: 'The URI of the container image to insert into the ECS task definition'
     required: true
+  task-role-arn:
+    description: 'The ARN of the IAM role that containers in this task can assume'
+    required: false
+  execution-role-arn:
+    description: 'The ARN of the IAM role that the Amazon ECS container agent and the Docker daemon can assume'
+    required: false
+  volume-name:
+    description: 'The name of the volume to mount in the container'
+    required: false
+  file-system-id:
+    description: 'The ID of the Amazon EFS file system to mount'
+    required: false
+  access-point-id:
+    description: 'The ID of the Amazon EFS access point that provides access to the file system'
+    required: false
   environment-variables:
     description: 'Variables to add to the container. Each variable is of the form KEY=value, you can specify multiple variables with multi-line YAML strings.'
     required: false
